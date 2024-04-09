@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Cursor;
 
 fn main() {
-    const IMG_PATH: &str = "white-circle.png";
+    const IMG_PATH: &str = "/home/tobs/Downloads/owl.png";
     let decoder = png::Decoder::new(File::open(IMG_PATH).unwrap());
     let mut reader = decoder.read_info().unwrap();
     let info = reader.info().clone();
