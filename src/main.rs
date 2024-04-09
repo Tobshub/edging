@@ -13,7 +13,7 @@ fn main() {
     let bytes = &buf[..frame_info.buffer_size()];
 
     let bytes = bytes_to_grayscale(bytes);
-    let bytes = guassian_blur(bytes.as_slice(), frame_info.width as usize);
+    let bytes = gaussian_blur(bytes.as_slice(), frame_info.width as usize);
     println!(
         "{}x{}; len: {};",
         frame_info.width,
@@ -99,7 +99,7 @@ fn bytes_to_grayscale(src: &[u8]) -> Vec<u8> {
 const KERNEL_RADIUS: i32 = 5;
 const KERNEL_SIZE: usize = (KERNEL_RADIUS * 2 + 1) as usize;
 
-fn guassian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
+fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
     let mut dst = vec![0; src.len()];
     let mut kernel: [f64; KERNEL_SIZE] = [0.0; KERNEL_SIZE];
     let mut sum = 0.0;
