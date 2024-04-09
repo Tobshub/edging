@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 png = "0.17.13"
+raylib = "3.7.0"

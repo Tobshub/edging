@@ -1,6 +1,6 @@
+use raylib::prelude::*;
 use std::fs::File;
-use std::io::BufWriter;
-use std::path::Path;
+use std::io::{BufWriter, Cursor};
 
 enum Luminosity {
     Red,
@@ -36,10 +36,9 @@ fn main() {
         grayscale_bytes.len()
     );
 
-    let buf: Vec<u8> = vec![];
-    let w = BufWriter::new(buf);
+    let mut w = Cursor::new(vec![]);
 
-    let mut encoder = png::Encoder::new(w, frame_info.width, frame_info.height);
+    let mut encoder = png::Encoder::new(&mut w, frame_info.width, frame_info.height);
     encoder.set_color(info.color_type);
     encoder.set_depth(info.bit_depth);
     if let Some(sg) = info.source_gamma {
@@ -51,6 +50,29 @@ fn main() {
     let mut writer = encoder.write_header().unwrap();
 
     writer.write_image_data(grayscale_bytes.as_slice()).unwrap();
+    writer.finish().unwrap();
+
+    let (mut rl, thread) = raylib::init()
+        .size(frame_info.width as i32, frame_info.height as i32)
+        .title("Edging")
+        .build();
+
+    let image_bytes = w.into_inner();
+    let image = raylib::core::texture::Image::load_image_from_mem(
+        ".png",
+        &image_bytes,
+        grayscale_bytes.len() as i32,
+    )
+    .unwrap();
+
+    let texture = rl.load_texture_from_image(&thread, &image).unwrap();
+
+    while !rl.window_should_close() {
+        let mut d = rl.begin_drawing(&thread);
+
+        d.clear_background(Color::RAYWHITE);
+        d.draw_texture(&texture, 0, 0, Color::WHITE);
+    }
 }
 
 fn bytes_to_grayscale(src: &[u8]) -> Vec<u8> {
