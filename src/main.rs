@@ -14,6 +14,7 @@ fn main() {
 
     let bytes = bytes_to_grayscale(bytes);
     let bytes = gaussian_blur(bytes.as_slice(), frame_info.width as usize);
+    let bytes = sobel_filter(bytes.as_slice(), frame_info.width as usize);
     println!(
         "{}x{}; len: {};",
         frame_info.width,
@@ -150,7 +151,7 @@ fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
     }
 
     // apply kernel in y direction
-    let delta = (image_width - 1) * 4;
+    let delta = image_width as i32 * 4;
     let mut py = 0;
     while py < dst.len() {
         let mut new_pixel = 0.0;
@@ -158,7 +159,7 @@ fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
         for kernel_x in -KERNEL_RADIUS..=KERNEL_RADIUS {
             let kernal_value = kernel[(kernel_x + KERNEL_RADIUS) as usize];
 
-            let neighbor_py = py as i32 + (kernel_x * 4) + (kernel_x * delta as i32);
+            let neighbor_py = py as i32 - kernel_x * delta;
 
             if neighbor_py < 0 || neighbor_py >= dst.len() as i32 {
                 continue;
@@ -171,6 +172,95 @@ fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
         dst[py] = new_pixel as u8;
         dst[py + 1] = new_pixel as u8;
         dst[py + 2] = new_pixel as u8;
+        dst[py + 3] = src[py + 3];
+
+        py += 4;
+    }
+
+    dst
+}
+
+// assumes grayscale & gaussian blur have already been applied
+fn sobel_filter(src: &[u8], image_width: usize) -> Vec<u8> {
+    let mut dst = vec![0; src.len()];
+
+    let kernel_phase_1: [i32; 3] = [1, 2, 1];
+    let kernel_phase_2: [i32; 3] = [1, 0, -1];
+
+    // apply kernel in x direction
+    let mut px = 0;
+    while px < src.len() {
+        let mut new_pixel: i32 = 0;
+
+        for kernel_x in -1..=1 {
+            let kernal_value = kernel_phase_1[(kernel_x + 1) as usize];
+
+            let neighbor_px = px as i32 + (kernel_x * 4);
+
+            if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
+                continue;
+            }
+
+            let npx = src[neighbor_px as usize] as i32 * kernal_value;
+            new_pixel += npx;
+        }
+
+        for kernel_x in -1..=1 {
+            let kernal_value = kernel_phase_2[(kernel_x + 1) as usize];
+
+            let neighbor_px = px as i32 + (kernel_x * 4);
+
+            if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
+                continue;
+            }
+
+            new_pixel *= kernal_value;
+        }
+
+        let ndst = new_pixel.unsigned_abs();
+        dst[px] = ndst as u8;
+        dst[px + 1] = ndst as u8;
+        dst[px + 2] = ndst as u8;
+        dst[px + 3] = src[px + 3];
+
+        px += 4;
+    }
+
+    // apply kernel in y direction
+    let delta = (image_width - 1) * 4;
+    let mut py = 0;
+    while py < src.len() {
+        let mut new_pixel: i32 = 0;
+
+        for kernel_x in -1..=1 {
+            let kernal_value = kernel_phase_2[(kernel_x + 1) as usize];
+
+            let neighbor_px = py as i32 + (kernel_x * 4) + (kernel_x * delta as i32);
+
+            if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
+                continue;
+            }
+
+            let npx = src[neighbor_px as usize] as i32 * kernal_value;
+            new_pixel += npx;
+        }
+
+        for kernel_x in -1..=1 {
+            let kernal_value = kernel_phase_1[(kernel_x + 1) as usize];
+
+            let neighbor_px = py as i32 + (kernel_x * 4) + (kernel_x * delta as i32);
+
+            if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
+                continue;
+            }
+
+            new_pixel *= kernal_value;
+        }
+
+        let ndst = (((dst[py] as u32).pow(2) + new_pixel.unsigned_abs().pow(2)) as f32).sqrt();
+        dst[py] = ndst as u8;
+        dst[py + 1] = ndst as u8;
+        dst[py + 2] = ndst as u8;
         dst[py + 3] = src[py + 3];
 
         py += 4;

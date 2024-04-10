@@ -15,7 +15,9 @@
     - https://aryamansharda.medium.com/image-filters-gaussian-blur-eb36db6781b1
     - https://www.southampton.ac.uk/~msn/book/new_demo/gaussian/
     - ![guassian blurred](./owl-gaussian.png)
-- [ ] Finding Intensity of Gradients of the Image
+- [x] Finding Intensity of Gradients of the Image
+    - https://en.wikipedia.org/wiki/Sobel_operator
+    - ![sobel](./owl-sobel.png)
 - [ ] Non-Max Suppression
 - [ ] Double Threshold
 - [ ] Edge Tracking by Hysteresis
