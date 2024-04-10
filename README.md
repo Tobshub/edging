@@ -18,7 +18,7 @@
     - ![guassian blurred](./owl-gaussian.png)
 - [x] Finding Intensity of Gradients of the Image
     - https://en.wikipedia.org/wiki/Sobel_operator
-    - ![sobel](./owl-sobel-filter.png)
+    - ![sobel](./owl-sobel.png)
 - [x] Non-Max Suppression
     - https://en.wikipedia.org/wiki/Canny_edge_detector#Gradient_magnitude_thresholding_or_lower_bound_cut-off_suppression
     - ![nms](./owl-threshold.png)
