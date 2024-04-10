@@ -103,7 +103,7 @@ fn bytes_to_grayscale(src: &[u8], px_width: usize) -> Vec<u8> {
     dst
 }
 
-const KERNEL_RADIUS: i32 = 3;
+const KERNEL_RADIUS: i32 = 2;
 const KERNEL_SIZE: usize = (KERNEL_RADIUS * 2 + 1) as usize;
 
 // assumes grayscale has been applied
@@ -209,7 +209,8 @@ fn sobel_filter(src: &[u8], image_width: i32) -> Vec<u8> {
                 continue;
             }
 
-            new_pixel *= kernel_value;
+            let npx = new_pixel * kernel_value;
+            new_pixel += npx;
         }
 
         dst[px * 2] = new_pixel.unsigned_abs() as u8;
@@ -241,7 +242,8 @@ fn sobel_filter(src: &[u8], image_width: i32) -> Vec<u8> {
                 continue;
             }
 
-            new_pixel *= kernel_value;
+            let npx = new_pixel * kernel_value;
+            new_pixel += npx;
         }
 
         let ndst = ((dst[py * 2] as u32).pow(2) + new_pixel.unsigned_abs().pow(2)) as f32;
