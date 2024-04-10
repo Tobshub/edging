@@ -9,23 +9,26 @@ fn main() {
     let info = reader.info().clone();
     let mut buf = vec![0; reader.output_buffer_size()];
 
+    let px_width = info.bytes_per_pixel();
+
     let frame_info = reader.next_frame(&mut buf).unwrap();
     let bytes = &buf[..frame_info.buffer_size()];
 
-    let bytes = bytes_to_grayscale(bytes);
-    let bytes = gaussian_blur(bytes.as_slice(), frame_info.width as usize);
-    let bytes = sobel_filter(bytes.as_slice(), frame_info.width as usize);
     println!(
-        "{}x{}; len: {};",
+        "{}x{}; len: {}; px_width: {}",
         frame_info.width,
         frame_info.height,
         bytes.len(),
+        px_width
     );
+    let bytes = bytes_to_grayscale(bytes, px_width);
+    let bytes = gaussian_blur(bytes.as_slice(), frame_info.width as i32);
+    // let bytes = sobel_filter(bytes.as_slice(), frame_info.width as usize);
 
     let mut w = Cursor::new(vec![]);
 
     let mut encoder = png::Encoder::new(&mut w, frame_info.width, frame_info.height);
-    encoder.set_color(info.color_type);
+    encoder.set_color(png::ColorType::Grayscale);
     encoder.set_depth(info.bit_depth);
     if let Some(sg) = info.source_gamma {
         encoder.set_source_gamma(sg);
@@ -79,19 +82,22 @@ impl Luminosity {
     }
 }
 
-fn bytes_to_grayscale(src: &[u8]) -> Vec<u8> {
-    let mut dst = vec![0; src.len()];
+fn bytes_to_grayscale(src: &[u8], px_width: usize) -> Vec<u8> {
+    let mut dst = vec![0; src.len() / px_width];
     let mut i = 0;
-    while i < src.len() {
-        let lum = (src[i] as f32 * Luminosity::Red.value()
-            + src[i + 1] as f32 * Luminosity::Green.value()
-            + src[i + 2] as f32 * Luminosity::Blue.value()) as u8;
-        dst[i] = lum;
-        dst[i + 1] = lum;
-        dst[i + 2] = lum;
-        dst[i + 3] = src[i + 3];
+    while i < src.len() - 2 {
+        let lum = match px_width {
+            1 => src[i],
+            3 | 4 => {
+                (src[i] as f32 * Luminosity::Red.value()
+                    + src[i + 1] as f32 * Luminosity::Green.value()
+                    + src[i + 2] as f32 * Luminosity::Blue.value()) as u8
+            }
+            _ => unreachable!(),
+        };
 
-        i += 4;
+        dst[i / px_width] = lum;
+        i += px_width;
     }
 
     dst
@@ -101,22 +107,22 @@ const KERNEL_RADIUS: i32 = 5;
 const KERNEL_SIZE: usize = (KERNEL_RADIUS * 2 + 1) as usize;
 
 // assumes grayscale has been applied
-fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
+fn gaussian_blur(src: &[u8], image_width: i32) -> Vec<u8> {
     let mut dst = vec![0; src.len()];
     let mut kernel: [f64; KERNEL_SIZE] = [0.0; KERNEL_SIZE];
     let mut sum = 0.0;
 
     let sigma: f64 = ((KERNEL_RADIUS / 2) as f64).max(1.0);
 
-    // compute kernal for 1D gaussian blur
+    // compute kernel for 1D gaussian blur
     for x in -KERNEL_RADIUS..=KERNEL_RADIUS {
         let exponent = -(x * x) as f64 / (2.0 * sigma * sigma);
         let numerator = std::f64::consts::E.powf(exponent);
         let denominator = 2.0 * std::f64::consts::PI * sigma * sigma;
 
-        let kernal_value = numerator / denominator;
-        kernel[(x + KERNEL_RADIUS) as usize] = kernal_value;
-        sum += kernal_value;
+        let kernel_value = numerator / denominator;
+        kernel[(x + KERNEL_RADIUS) as usize] = kernel_value;
+        sum += kernel_value;
     }
 
     // normalize kernel
@@ -125,57 +131,44 @@ fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
     });
 
     // apply kernel in x direction
-    let mut px = 0;
-    while px < src.len() {
+    (0..src.len()).for_each(|px| {
         let mut new_pixel = 0.0;
 
         for kernel_x in -KERNEL_RADIUS..=KERNEL_RADIUS {
-            let kernal_value = kernel[(kernel_x + KERNEL_RADIUS) as usize];
+            let kernel_value = kernel[(kernel_x + KERNEL_RADIUS) as usize];
 
-            let neighbor_px = px as i32 + (kernel_x * 4);
+            let neighbor_px = px as i32 + kernel_x;
 
             if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
                 continue;
             }
 
-            let npx = src[neighbor_px as usize] as f64 * kernal_value;
+            let npx = src[neighbor_px as usize] as f64 * kernel_value;
             new_pixel += npx;
         }
 
         dst[px] = new_pixel as u8;
-        dst[px + 1] = new_pixel as u8;
-        dst[px + 2] = new_pixel as u8;
-        dst[px + 3] = src[px + 3];
-
-        px += 4;
-    }
+    });
 
     // apply kernel in y direction
-    let delta = image_width as i32 * 4;
-    let mut py = 0;
-    while py < dst.len() {
+    (0..dst.len()).for_each(|py| {
         let mut new_pixel = 0.0;
 
         for kernel_x in -KERNEL_RADIUS..=KERNEL_RADIUS {
-            let kernal_value = kernel[(kernel_x + KERNEL_RADIUS) as usize];
+            let kernel_value = kernel[(kernel_x + KERNEL_RADIUS) as usize];
 
-            let neighbor_py = py as i32 - kernel_x * delta;
+            let neighbor_py = py as i32 + kernel_x * image_width;
 
             if neighbor_py < 0 || neighbor_py >= dst.len() as i32 {
                 continue;
             }
 
-            let npx = dst[neighbor_py as usize] as f64 * kernal_value;
+            let npx = dst[neighbor_py as usize] as f64 * kernel_value;
             new_pixel += npx;
         }
 
         dst[py] = new_pixel as u8;
-        dst[py + 1] = new_pixel as u8;
-        dst[py + 2] = new_pixel as u8;
-        dst[py + 3] = src[py + 3];
-
-        py += 4;
-    }
+    });
 
     dst
 }
@@ -227,7 +220,7 @@ fn sobel_filter(src: &[u8], image_width: usize) -> Vec<u8> {
     }
 
     // apply kernel in y direction
-    let delta = (image_width - 1) * 4;
+    let delta = image_width as i32 * 4;
     let mut py = 0;
     while py < src.len() {
         let mut new_pixel: i32 = 0;
@@ -235,7 +228,7 @@ fn sobel_filter(src: &[u8], image_width: usize) -> Vec<u8> {
         for kernel_x in -1..=1 {
             let kernal_value = kernel_phase_2[(kernel_x + 1) as usize];
 
-            let neighbor_px = py as i32 + (kernel_x * 4) + (kernel_x * delta as i32);
+            let neighbor_px = py as i32 - kernel_x * delta;
 
             if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
                 continue;
