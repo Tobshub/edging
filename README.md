@@ -17,7 +17,7 @@
     - ![guassian blurred](./owl-gaussian.png)
 - [x] Finding Intensity of Gradients of the Image
     - https://en.wikipedia.org/wiki/Sobel_operator
-    - ![sobel](./owl-sobel.png)
+    - ![sobel](./owl-sobel-filter.png)
 - [ ] Non-Max Suppression
 - [ ] Double Threshold
 - [ ] Edge Tracking by Hysteresis
