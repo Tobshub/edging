@@ -9,7 +9,7 @@
 - [x] Greyscale conversion
     - https://www.kaggle.com/code/bishowlamsal/rgb-to-grayscale-image
     - https://stackoverflow.com/questions/42516203/converting-rgba-image-to-grayscale-golang
-    - ![greyscale](./owl-greyscale.png)
+    - ![grayscale](./owl-grayscale.png)
 - [x] Gaussian Blur
     - https://en.wikipedia.org/wiki/Gaussian_blur
     - https://aryamansharda.medium.com/image-filters-gaussian-blur-eb36db6781b1
