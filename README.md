@@ -22,5 +22,8 @@
 - [x] Non-Max Suppression
     - https://en.wikipedia.org/wiki/Canny_edge_detector#Gradient_magnitude_thresholding_or_lower_bound_cut-off_suppression
     - ![nms](./owl-nms.png)
-- [ ] Double Threshold
+- [x] Double Threshold
+    - https://towardsdatascience.com/canny-edge-detection-step-by-step-in-python-computer-vision-b49c3a2d8123
+    - https://en.wikipedia.org/wiki/Canny_edge_detector#Double_threshold
+    - ![nms](./owl-double.png)
 - [ ] Edge Tracking by Hysteresis

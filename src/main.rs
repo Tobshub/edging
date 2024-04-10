@@ -24,6 +24,7 @@ fn main() {
     let bytes = bytes_to_grayscale(bytes, px_width);
     let bytes = gaussian_blur(bytes.as_slice(), frame_info.width as i32);
     let bytes = gradient_thresholding(bytes.as_slice(), frame_info.width as usize);
+    let bytes = double_threshold(bytes.as_slice());
 
     let mut w = Cursor::new(vec![]);
 
@@ -313,6 +314,26 @@ fn gradient_thresholding(src: &[u8], image_width: usize) -> Vec<u8> {
 
         px += 2;
     }
+
+    dst
+}
+
+fn double_threshold(src: &[u8]) -> Vec<u8> {
+    let mut dst = vec![0; src.len()];
+
+    let max = *src.iter().max().unwrap();
+    let high = (max as u32 * 3 / 10) as u8;
+    let low = max / 10;
+
+    (0..src.len()).for_each(|px| {
+        if src[px] < low {
+            dst[px] = 0;
+        } else if src[px] > high {
+            dst[px] = 255;
+        } else {
+            dst[px] = 25;
+        }
+    });
 
     dst
 }
