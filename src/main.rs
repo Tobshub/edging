@@ -253,10 +253,10 @@ fn sobel_filter(src: &[u8], image_width: i32) -> Vec<u8> {
             .abs();
         dst[py * 2] = ndst.sqrt().ceil() as u8;
         let angle = match angle {
-            0.0..=22.5 | 157.5..=180.0 => 0,
-            22.5..=67.5 => 45,
-            67.5..=112.5 => 90,
-            112.5..=157.5 => 135,
+            0.0..=22.4 | 157.5..=180.0 => 0,
+            22.5..=67.4 => 45,
+            67.5..=112.4 => 90,
+            112.5..=157.4 => 135,
             _ => panic!("Unexpected angle: {}", angle),
         };
         dst[py * 2 + 1] = angle;
@@ -265,6 +265,7 @@ fn sobel_filter(src: &[u8], image_width: i32) -> Vec<u8> {
     dst
 }
 
+// assumes grayscale has already been applied
 fn gradient_thresholding(src: &[u8], image_width: usize) -> Vec<u8> {
     let src = sobel_filter(src, image_width as i32);
     let image_width = image_width * 2;
@@ -300,10 +301,11 @@ fn gradient_thresholding(src: &[u8], image_width: usize) -> Vec<u8> {
             if cmp_px < 0 || cmp_px >= src.len() as i32 {
                 continue;
             }
-            if src[cmp_px as usize] >= src[px] {
+            if src[cmp_px as usize] > src[px] {
                 new_pixel = 0;
                 break;
             }
+
             new_pixel = src[px];
         }
 

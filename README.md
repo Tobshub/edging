@@ -21,6 +21,6 @@
     - ![sobel](./owl-sobel.png)
 - [x] Non-Max Suppression
     - https://en.wikipedia.org/wiki/Canny_edge_detector#Gradient_magnitude_thresholding_or_lower_bound_cut-off_suppression
-    - ![nms](./owl-threshold.png)
+    - ![nms](./owl-nms.png)
 - [ ] Double Threshold
 - [ ] Edge Tracking by Hysteresis
