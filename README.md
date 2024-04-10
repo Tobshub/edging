@@ -4,6 +4,7 @@
 ## Resources:
 
 - Step by Step Guide: https://www.analyticsvidhya.com/blog/2022/08/comprehensive-guide-to-edge-detection-algorithms/
+- https://en.wikipedia.org/wiki/Canny_edge_detector
     - ![original](./owl.png)
 
 - [x] Greyscale conversion
@@ -18,6 +19,8 @@
 - [x] Finding Intensity of Gradients of the Image
     - https://en.wikipedia.org/wiki/Sobel_operator
     - ![sobel](./owl-sobel-filter.png)
-- [ ] Non-Max Suppression
+- [x] Non-Max Suppression
+    - https://en.wikipedia.org/wiki/Canny_edge_detector#Gradient_magnitude_thresholding_or_lower_bound_cut-off_suppression
+    - ![nms](./owl-threshold.png)
 - [ ] Double Threshold
 - [ ] Edge Tracking by Hysteresis
