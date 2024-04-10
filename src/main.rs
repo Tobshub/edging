@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Cursor;
 
 fn main() {
-    const IMG_PATH: &str = "/home/tobs/Downloads/owl.png";
+    const IMG_PATH: &str = "owl.png";
     let decoder = png::Decoder::new(File::open(IMG_PATH).unwrap());
     let mut reader = decoder.read_info().unwrap();
     let info = reader.info().clone();
@@ -99,6 +99,7 @@ fn bytes_to_grayscale(src: &[u8]) -> Vec<u8> {
 const KERNEL_RADIUS: i32 = 5;
 const KERNEL_SIZE: usize = (KERNEL_RADIUS * 2 + 1) as usize;
 
+// assumes grayscale has been applied
 fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
     let mut dst = vec![0; src.len()];
     let mut kernel: [f64; KERNEL_SIZE] = [0.0; KERNEL_SIZE];
@@ -125,7 +126,7 @@ fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
     // apply kernel in x direction
     let mut px = 0;
     while px < src.len() {
-        let mut new_pixel = [0.0; 3];
+        let mut new_pixel = 0.0;
 
         for kernel_x in -KERNEL_RADIUS..=KERNEL_RADIUS {
             let kernal_value = kernel[(kernel_x + KERNEL_RADIUS) as usize];
@@ -136,24 +137,23 @@ fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
                 continue;
             }
 
-            new_pixel[0] += src[neighbor_px as usize] as f64 * kernal_value;
-            new_pixel[1] += src[neighbor_px as usize + 1] as f64 * kernal_value;
-            new_pixel[2] += src[neighbor_px as usize + 2] as f64 * kernal_value;
+            let npx = src[neighbor_px as usize] as f64 * kernal_value;
+            new_pixel += npx;
         }
 
-        dst[px] = new_pixel[0] as u8;
-        dst[px + 1] = new_pixel[1] as u8;
-        dst[px + 2] = new_pixel[2] as u8;
+        dst[px] = new_pixel as u8;
+        dst[px + 1] = new_pixel as u8;
+        dst[px + 2] = new_pixel as u8;
         dst[px + 3] = src[px + 3];
 
         px += 4;
     }
 
     // apply kernel in y direction
-    let delta = image_width * 4;
+    let delta = (image_width - 1) * 4;
     let mut py = 0;
     while py < dst.len() {
-        let mut new_pixel = [0.0; 3];
+        let mut new_pixel = 0.0;
 
         for kernel_x in -KERNEL_RADIUS..=KERNEL_RADIUS {
             let kernal_value = kernel[(kernel_x + KERNEL_RADIUS) as usize];
@@ -164,14 +164,13 @@ fn gaussian_blur(src: &[u8], image_width: usize) -> Vec<u8> {
                 continue;
             }
 
-            new_pixel[0] += dst[neighbor_py as usize] as f64 * kernal_value;
-            new_pixel[1] += dst[neighbor_py as usize + 1] as f64 * kernal_value;
-            new_pixel[2] += dst[neighbor_py as usize + 2] as f64 * kernal_value;
+            let npx = dst[neighbor_py as usize] as f64 * kernal_value;
+            new_pixel += npx;
         }
 
-        dst[py] = new_pixel[0] as u8;
-        dst[py + 1] = new_pixel[1] as u8;
-        dst[py + 2] = new_pixel[2] as u8;
+        dst[py] = new_pixel as u8;
+        dst[py + 1] = new_pixel as u8;
+        dst[py + 2] = new_pixel as u8;
         dst[py + 3] = src[py + 3];
 
         py += 4;
