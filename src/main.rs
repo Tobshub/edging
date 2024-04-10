@@ -23,7 +23,7 @@ fn main() {
     );
     let bytes = bytes_to_grayscale(bytes, px_width);
     let bytes = gaussian_blur(bytes.as_slice(), frame_info.width as i32);
-    let bytes = sobel_filter(bytes.as_slice(), frame_info.width as i32);
+    let bytes = gradient_thresholding(bytes.as_slice(), frame_info.width as usize);
 
     let mut w = Cursor::new(vec![]);
 
@@ -173,9 +173,12 @@ fn gaussian_blur(src: &[u8], image_width: i32) -> Vec<u8> {
     dst
 }
 
-// assumes grayscale & gaussian blur have already been applied
+/// assumes grayscale & gaussian blur have already been applied
+/// the output is not suitable for drawing
+/// output format: [gradient_magnitude, gradient_direction]
+/// hence the output size is twice the input size
 fn sobel_filter(src: &[u8], image_width: i32) -> Vec<u8> {
-    let mut dst = vec![0; src.len()];
+    let mut dst = vec![0; src.len() * 2];
 
     let kernel_phase_1: [i32; 3] = [1, 2, 1];
     let kernel_phase_2: [i32; 3] = [1, 0, -1];
@@ -209,7 +212,7 @@ fn sobel_filter(src: &[u8], image_width: i32) -> Vec<u8> {
             new_pixel *= kernel_value;
         }
 
-        dst[px] = new_pixel.unsigned_abs() as u8;
+        dst[px * 2] = new_pixel.unsigned_abs() as u8;
     });
 
     // apply kernel in y direction
@@ -241,9 +244,71 @@ fn sobel_filter(src: &[u8], image_width: i32) -> Vec<u8> {
             new_pixel *= kernel_value;
         }
 
-        let ndst = ((dst[py] as u32).pow(2) + new_pixel.unsigned_abs().pow(2)) as f32;
-        dst[py] = ndst.sqrt() as u8;
+        let ndst = ((dst[py * 2] as u32).pow(2) + new_pixel.unsigned_abs().pow(2)) as f32;
+        let angle = (new_pixel as f32)
+            .atan2(dst[py * 2] as f32)
+            .to_degrees()
+            .abs();
+        dst[py * 2] = ndst.sqrt().ceil() as u8;
+        let angle = match angle {
+            0.0..=22.5 | 157.5..=180.0 => 0,
+            22.5..=67.5 => 45,
+            67.5..=112.5 => 90,
+            112.5..=157.5 => 135,
+            _ => panic!("Unexpected angle: {}", angle),
+        };
+        dst[py * 2 + 1] = angle;
     });
+
+    dst
+}
+
+fn gradient_thresholding(src: &[u8], image_width: usize) -> Vec<u8> {
+    let src = sobel_filter(src, image_width as i32);
+    let image_width = image_width * 2;
+    let mut dst = vec![0; src.len() / 2];
+
+    let mut px = 0;
+    while px < src.len() {
+        let mut new_pixel = 0;
+
+        let angle = src[px + 1];
+        let mut cmp_pxs: [i32; 2] = [0; 2];
+        match angle {
+            0 => {
+                cmp_pxs[0] = px as i32 - 2;
+                cmp_pxs[1] = px as i32 + 2;
+            }
+            45 => {
+                cmp_pxs[0] = px as i32 - image_width as i32 + 2;
+                cmp_pxs[1] = px as i32 + image_width as i32 - 2;
+            }
+            90 => {
+                cmp_pxs[0] = px as i32 - image_width as i32;
+                cmp_pxs[1] = px as i32 + image_width as i32;
+            }
+            135 => {
+                cmp_pxs[0] = px as i32 - image_width as i32 - 2;
+                cmp_pxs[1] = px as i32 + image_width as i32 + 2;
+            }
+            _ => panic!("Unexpected angle: {}", angle),
+        };
+
+        for cmp_px in cmp_pxs {
+            if cmp_px < 0 || cmp_px >= src.len() as i32 {
+                continue;
+            }
+            if src[cmp_px as usize] >= src[px] {
+                new_pixel = 0;
+                break;
+            }
+            new_pixel = src[px];
+        }
+
+        dst[px / 2] = new_pixel;
+
+        px += 2;
+    }
 
     dst
 }
