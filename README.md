@@ -3,9 +3,10 @@
 
 ## Resources:
 
-- Step by Step Guide: https://www.analyticsvidhya.com/blog/2022/08/comprehensive-guide-to-edge-detection-algorithms/
+Step by Step Guide:
+- https://www.analyticsvidhya.com/blog/2022/08/comprehensive-guide-to-edge-detection-algorithms/
 - https://en.wikipedia.org/wiki/Canny_edge_detector
-    - ![original](./owl.png)
+- ![original](./owl.png)
 
 - [x] Greyscale conversion
     - https://www.kaggle.com/code/bishowlamsal/rgb-to-grayscale-image
@@ -24,6 +25,6 @@
     - ![nms](./owl-nms.png)
 - [x] Double Threshold
     - https://towardsdatascience.com/canny-edge-detection-step-by-step-in-python-computer-vision-b49c3a2d8123
-    - https://en.wikipedia.org/wiki/Canny_edge_detector#Double_threshold
     - ![nms](./owl-dt.png)
-- [ ] Edge Tracking by Hysteresis
+- [x] Edge Tracking by Hysteresis
+    - ![hysteresis](./owl-hysteresis.png)

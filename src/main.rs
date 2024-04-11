@@ -25,6 +25,7 @@ fn main() {
     let bytes = gaussian_blur(bytes.as_slice(), frame_info.width as i32);
     let bytes = gradient_thresholding(bytes.as_slice(), frame_info.width as usize);
     let bytes = double_threshold(bytes.as_slice());
+    let bytes = hysteresis(bytes, frame_info.width as i32);
 
     let mut w = Cursor::new(vec![]);
 
@@ -322,8 +323,8 @@ fn double_threshold(src: &[u8]) -> Vec<u8> {
     let mut dst = vec![0; src.len()];
 
     let max = *src.iter().max().unwrap();
-    let high = (max as u32 * 3 / 10) as u8;
-    let low = max / 10;
+    let high = (max as u32 * 7 / 10) as u8;
+    let low = (max as u32 * 2 / 10) as u8;
 
     (0..src.len()).for_each(|px| {
         if src[px] < low {
@@ -336,4 +337,41 @@ fn double_threshold(src: &[u8]) -> Vec<u8> {
     });
 
     dst
+}
+
+fn hysteresis(mut src: Vec<u8>, image_width: i32) -> Vec<u8> {
+    (0..src.len()).for_each(|px| {
+        if src[px] != 255 && src[px] != 0 {
+            let blob = [
+                //top
+                px as i32 - image_width - 1,
+                px as i32 - image_width,
+                px as i32 - image_width + 1,
+                // left and right
+                px as i32 - 1,
+                px as i32 + 1,
+                // bottom
+                px as i32 + image_width - 1,
+                px as i32 + image_width,
+                px as i32 + image_width + 1,
+            ];
+
+            for neighbor_px in blob {
+                if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
+                    continue;
+                }
+                match src[neighbor_px as usize] {
+                    255 => {
+                        src[px] = 255;
+                        break;
+                    }
+                    _ => {
+                        src[px] = 0;
+                    }
+                }
+            }
+        }
+    });
+
+    src
 }
