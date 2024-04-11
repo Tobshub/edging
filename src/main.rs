@@ -87,7 +87,7 @@ impl Luminosity {
 fn bytes_to_grayscale(src: &[u8], px_width: usize) -> Vec<u8> {
     let mut dst = vec![0; src.len() / px_width];
     let mut i = 0;
-    while i < src.len() - 2 {
+    while i < src.len() - px_width + 1 {
         let lum = match px_width {
             1 => src[i],
             3 | 4 => {
