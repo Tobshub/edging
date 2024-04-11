@@ -324,7 +324,7 @@ fn double_threshold(src: &[u8]) -> Vec<u8> {
 
     let max = *src.iter().max().unwrap();
     let high = (max as u32 * 7 / 10) as u8;
-    let low = (max as u32 * 2 / 10) as u8;
+    let low = (max as u32 * 5 / 10) as u8;
 
     (0..src.len()).for_each(|px| {
         if src[px] < low {

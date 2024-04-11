@@ -25,6 +25,6 @@ Step by Step Guide:
     - ![nms](./owl-nms.png)
 - [x] Double Threshold
     - https://towardsdatascience.com/canny-edge-detection-step-by-step-in-python-computer-vision-b49c3a2d8123
-    - ![nms](./owl-dt.png)
+    - ![double threshold](./owl-double.png)
 - [x] Edge Tracking by Hysteresis
-    - ![hysteresis](./owl-hyst.png)
+    - ![hysteresis](./owl-hysteresis.png)
