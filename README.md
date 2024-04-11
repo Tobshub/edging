@@ -27,4 +27,4 @@ Step by Step Guide:
     - https://towardsdatascience.com/canny-edge-detection-step-by-step-in-python-computer-vision-b49c3a2d8123
     - ![nms](./owl-dt.png)
 - [x] Edge Tracking by Hysteresis
-    - ![hysteresis](./owl-hysteresis.png)
+    - ![hysteresis](./owl-hyst.png)
