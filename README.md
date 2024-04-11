@@ -25,5 +25,5 @@
 - [x] Double Threshold
     - https://towardsdatascience.com/canny-edge-detection-step-by-step-in-python-computer-vision-b49c3a2d8123
     - https://en.wikipedia.org/wiki/Canny_edge_detector#Double_threshold
-    - ![nms](./owl-double.png)
+    - ![nms](./owl-dt.png)
 - [ ] Edge Tracking by Hysteresis
