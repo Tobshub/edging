@@ -179,86 +179,64 @@ fn gaussian_blur(mut src: Vec<u8>, image_width: i32) -> Vec<u8> {
 /// the output is not suitable for drawing
 /// output format: [gradient_magnitude, gradient_direction]
 /// hence the output size is twice the input size
-fn sobel_filter(src: &[u8], image_width: i32) -> Vec<u8> {
+fn sobel_filter(src: &[u8], image_width: i32) -> Vec<i32> {
     let mut dst = vec![0; src.len() * 2];
 
-    let kernel_phase_1: [i32; 3] = [1, 2, 1];
-    let kernel_phase_2: [i32; 3] = [1, 0, -1];
+    let kernel_x = [[1, 0, -1], [2, 0, -2], [1, 0, -1]];
+    let kernel_y = [[1, 2, 1], [0, 0, 0], [-1, -2, -1]];
 
     // apply kernel in x direction
     (0..src.len()).for_each(|px| {
         let mut new_pixel: i32 = 0;
 
-        for kernel_x in -1..=1 {
-            let kernel_value = kernel_phase_1[(kernel_x + 1) as usize];
+        for x in -1..=1 {
+            for y in -1..=1 {
+                let kernel_value = kernel_x[(x + 1) as usize][(y + 1) as usize];
 
-            let neighbor_px = px as i32 + kernel_x;
+                let neighbor_px = px as i32 + x + (y * image_width);
 
-            if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
-                continue;
+                if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
+                    continue;
+                }
+
+                let npx = src[neighbor_px as usize] as i32 * kernel_value;
+                new_pixel += npx;
             }
-
-            let npx = src[neighbor_px as usize] as i32 * kernel_value;
-            new_pixel += npx;
         }
 
-        for kernel_x in -1..=1 {
-            let kernel_value = kernel_phase_2[(kernel_x + 1) as usize];
-
-            let neighbor_px = px as i32 + kernel_x;
-
-            if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
-                continue;
-            }
-
-            let npx = new_pixel * kernel_value;
-            new_pixel += npx;
-        }
-
-        dst[px * 2] = new_pixel.unsigned_abs() as u8;
+        dst[px * 2] = new_pixel;
     });
 
     // apply kernel in y direction
     (0..src.len()).for_each(|py| {
         let mut new_pixel: i32 = 0;
 
-        for kernel_x in -1..=1 {
-            let kernel_value = kernel_phase_2[(kernel_x + 1) as usize];
+        for x in -1..=1 {
+            for y in -1..=1 {
+                let kernel_value = kernel_y[(x + 1) as usize][(y + 1) as usize];
 
-            let neighbor_px = py as i32 + kernel_x * image_width;
+                let neighbor_px = py as i32 + x + (y * image_width);
 
-            if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
-                continue;
+                if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
+                    continue;
+                }
+
+                let npx = src[neighbor_px as usize] as i32 * kernel_value;
+                new_pixel += npx;
             }
-
-            let npx = src[neighbor_px as usize] as i32 * kernel_value;
-            new_pixel += npx;
         }
 
-        for kernel_x in -1..=1 {
-            let kernel_value = kernel_phase_1[(kernel_x + 1) as usize];
-
-            let neighbor_px = py as i32 + kernel_x * image_width;
-
-            if neighbor_px < 0 || neighbor_px >= src.len() as i32 {
-                continue;
-            }
-
-            let npx = new_pixel * kernel_value;
-            new_pixel += npx;
-        }
-
-        let ndst = ((dst[py * 2] as u32).pow(2) + new_pixel.unsigned_abs().pow(2)) as f32;
+        let ndst = (dst[py * 2].pow(2) + new_pixel.pow(2)) as f32;
         let angle = (new_pixel as f32)
             .atan2(dst[py * 2] as f32)
             .to_degrees()
             .abs();
-        dst[py * 2] = ndst.sqrt().ceil() as u8;
+        dst[py * 2] = ndst.sqrt().ceil() as i32;
         let angle = match angle {
-            0.0..=22.4 | 157.5..=180.0 => 0,
-            22.5..=67.4 => 45,
-            67.5..=112.4 => 90,
-            112.5..=157.4 => 135,
+            0.0..=22.5 | 157.5..=180.0 => 0,
+            22.5..=67.5 => 45,
+            67.5..=112.5 => 90,
+            112.5..=157.5 => 135,
             _ => panic!("Unexpected angle: {}", angle),
         };
         dst[py * 2 + 1] = angle;
@@ -272,6 +250,8 @@ fn gradient_thresholding(src: &[u8], image_width: usize) -> Vec<u8> {
     let src = sobel_filter(src, image_width as i32);
     let image_width = image_width * 2;
     let mut dst = vec![0; src.len() / 2];
+
+    let sobel_max = *src.iter().max().unwrap();
 
     let mut px = 0;
     while px < src.len() {
@@ -311,7 +291,7 @@ fn gradient_thresholding(src: &[u8], image_width: usize) -> Vec<u8> {
             new_pixel = src[px];
         }
 
-        dst[px / 2] = new_pixel;
+        dst[px / 2] = ((new_pixel as f32 / sobel_max as f32) * 255.0) as u8;
 
         px += 2;
     }
@@ -323,13 +303,14 @@ fn double_threshold(src: &[u8]) -> Vec<u8> {
     let mut dst = vec![0; src.len()];
 
     let max = *src.iter().max().unwrap();
-    let high = (max as u32 * 7 / 10) as u8;
-    let low = (max as u32 * 5 / 10) as u8;
+    let high = max as f32 * 0.9 / 10.0;
+    let low = max as f32 * 0.5 / 10.0;
 
     (0..src.len()).for_each(|px| {
-        if src[px] < low {
+        let src_px = src[px] as f32;
+        if src_px < low {
             dst[px] = 0;
-        } else if src[px] > high {
+        } else if src_px > high {
             dst[px] = 255;
         } else {
             dst[px] = 25;
