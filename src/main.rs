@@ -22,7 +22,7 @@ fn main() {
         px_width
     );
     let bytes = bytes_to_grayscale(bytes, px_width);
-    let bytes = gaussian_blur(bytes.as_slice(), frame_info.width as i32);
+    let bytes = gaussian_blur(bytes, frame_info.width as i32);
     let bytes = gradient_thresholding(bytes.as_slice(), frame_info.width as usize);
     let bytes = double_threshold(bytes.as_slice());
     let bytes = hysteresis(bytes, frame_info.width as i32);
@@ -109,7 +109,7 @@ const KERNEL_RADIUS: i32 = 2;
 const KERNEL_SIZE: usize = (KERNEL_RADIUS * 2 + 1) as usize;
 
 // assumes grayscale has been applied
-fn gaussian_blur(src: &[u8], image_width: i32) -> Vec<u8> {
+fn gaussian_blur(mut src: Vec<u8>, image_width: i32) -> Vec<u8> {
     let mut dst = vec![0; src.len()];
     let mut kernel: [f64; KERNEL_SIZE] = [0.0; KERNEL_SIZE];
     let mut sum = 0.0;
@@ -169,10 +169,10 @@ fn gaussian_blur(src: &[u8], image_width: i32) -> Vec<u8> {
             new_pixel += npx;
         }
 
-        dst[py] = new_pixel as u8;
+        src[py] = new_pixel as u8;
     });
 
-    dst
+    src
 }
 
 /// assumes grayscale & gaussian blur have already been applied
